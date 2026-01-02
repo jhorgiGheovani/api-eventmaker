@@ -1,16 +1,27 @@
 import { Hono } from "hono";
 import { prisma } from "../utils/prisma.js";
+import { zValidator } from "@hono/zod-validator";
+import { createParticipantValidation } from "../validation/event-validation.js";
 
 export const partisipantRoute = new Hono()
-  .get("/", (c) => {
-    return c.json({ event: [] });
+  .get("/", async (c) => {
+    const participants = await prisma.participant.findMany();
+    return c.json({ participants: participants });
   })
-  .get("/:id", (c) => {
+  .get("/:id", async (c) => {
     const id = c.req.param("id");
-    return c.json({ event: id });
+    const participant = await prisma.participant.findFirst({
+      where: {
+        id: id,
+      },
+      include: {
+        event: true,
+      },
+    });
+    return c.json({ participant });
   })
-  .post("/", async (c) => {
-    const body = await c.req.json();
+  .post("/", zValidator("json", createParticipantValidation), async (c) => {
+    const body = await c.req.valid("json");
 
     const newParticipant = await prisma.participant.create({
       data: {
@@ -19,13 +30,32 @@ export const partisipantRoute = new Hono()
         eventId: body.eventId,
       },
     });
-    return c.json({ event: newParticipant });
+    return c.json({ participant: newParticipant });
   })
-  .patch("/:id", (c) => {
+  .patch("/:id", async (c) => {
     const id = c.req.param("id");
-    return c.json({ event: id });
+    const body = await c.req.json();
+
+    const updateParticipant = await prisma.participant.update({
+      where: {
+        id: id,
+      },
+      data: {
+        name: body.name,
+        email: body.email,
+        eventId: body.eventId,
+      },
+    });
+    return c.json({ participant: updateParticipant });
   })
-  .delete("/:id", (c) => {
+  .delete("/:id", async (c) => {
     const id = c.req.param("id");
-    return c.json({ event: id });
+
+    await prisma.participant.delete({
+      where: {
+        id: id,
+      },
+    });
+
+    return c.json({ message: "Participant deleted successfully" });
   });
