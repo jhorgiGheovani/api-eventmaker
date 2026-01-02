@@ -12,3 +12,7 @@ export const createParticipantValidation = z.object({
   email: z.email(),
   eventId: z.string().min(1),
 });
+
+export const updateEventValidation = createEventValidation.partial();
+
+export const updateParticipantValidation = createParticipantValidation.partial();

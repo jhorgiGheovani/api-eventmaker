@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../utils/prisma.js";
 import { zValidator } from "@hono/zod-validator";
-import { createEventValidation } from "../validation/event-validation.js";
+import { createEventValidation, updateEventValidation } from "../validation/event-validation.js";
 
 export const eventsRoute = new Hono()
   .get("/", async (c) => {
@@ -37,9 +37,9 @@ export const eventsRoute = new Hono()
     });
     return c.json({ event: newEvent });
   })
-  .patch("/:id", async (c) => {
+  .patch("/:id", zValidator("json", updateEventValidation), async (c) => {
     const id = c.req.param("id");
-    const body = await c.req.json();
+    const body = c.req.valid("json");
 
     const updateEvent = await prisma.event.update({
       where: {
@@ -48,7 +48,7 @@ export const eventsRoute = new Hono()
       data: {
         name: body.name,
         description: body.description,
-        dateTime: body.date,
+        dateTime: body.dateTime,
         location: body.location,
       },
     });
