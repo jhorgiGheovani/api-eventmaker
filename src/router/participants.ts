@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../utils/prisma.js";
 import { zValidator } from "@hono/zod-validator";
-import { createParticipantValidation } from "../validation/event-validation.js";
+import { createParticipantValidation, updateParticipantValidation } from "../validation/event-validation.js";
 
 export const partisipantRoute = new Hono()
   .get("/", async (c) => {
@@ -32,9 +32,9 @@ export const partisipantRoute = new Hono()
     });
     return c.json({ participant: newParticipant });
   })
-  .patch("/:id", async (c) => {
+  .patch("/:id", zValidator("json", updateParticipantValidation), async (c) => {
     const id = c.req.param("id");
-    const body = await c.req.json();
+    const body = c.req.valid("json");
 
     const updateParticipant = await prisma.participant.update({
       where: {
